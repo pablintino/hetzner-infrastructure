@@ -1,0 +1,27 @@
+{
+  "nodes": [
+    {
+      "name": "master-1",
+      "size": "cx11",
+      "roles": [
+        "etcd",
+        "k8s-master"
+      ]
+    },
+    {
+      "name": "master-2",
+      "size": "cx11",
+      "roles": [
+        "etcd",
+        "k8s-master"
+      ]
+    },
+    {
+      "name": "worker-1",
+      "size": "cx11",
+      "roles": [
+        "worker"
+      ]
+    }
+  ]
+}

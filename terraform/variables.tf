@@ -1,4 +1,9 @@
 variable "servers" {
+  type = map(object({
+    server_type = string
+    location = string
+    node_type = set(string)
+  }))
 }
 
 variable "ssh_public_key" {
