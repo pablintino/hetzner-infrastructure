@@ -1,11 +1,12 @@
-import distutils.spawn
-import select
-import subprocess
-import logging
 import os
 import sys
+import json
+import select
+import logging
+import tempfile
 import threading
-
+import subprocess
+import distutils.spawn
 from generator import utils
 
 logger = logging.getLogger(__name__)
@@ -25,6 +26,18 @@ class Terraform:
         working_dir = os.getcwd() if not cwd else cwd
         arg_list = [self.tf_binary]
         arg_list.extend(params)
+        try:
+            return (
+                True,
+                subprocess.check_output(arg_list, stdin=subprocess.DEVNULL, universal_newlines=True, cwd=working_dir,
+                                        timeout=timeout))
+        except subprocess.CalledProcessError:
+            return False, None
+
+    def __run_tf_process(self, params, cwd=None, timeout=180):
+        working_dir = os.getcwd() if not cwd else cwd
+        arg_list = [self.tf_binary]
+        arg_list.extend(params)
         proc = subprocess.Popen(arg_list, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                 universal_newlines=True, cwd=working_dir)
         timer = threading.Timer(timeout, proc.kill)
@@ -38,7 +51,7 @@ class Terraform:
                     if fd == proc.stdout.fileno():
                         while proc.poll() is None:
                             read = proc.stdout.readline()
-                            #TODO Temp log to stdout
+                            # TODO Temp log to stdout
                             sys.stdout.write(read)
                     if fd == proc.stderr.fileno():
                         while proc.poll() is None:
@@ -55,11 +68,46 @@ class Terraform:
             timer.cancel()
 
         logger.debug(f'TF execution finished. Return code {ret_code}')
-        return ret_code == 0
+        return ret_code
 
-    def plan(self, tf_file, vars_files=None):
-        args_list = ['plan']
+    def __run_parametrized_command(self, command, tf_file, vars_files=None, opts=None):
+        args_list = [command]
         for var, val in Terraform.__gather_env_vars().items():
             args_list.append(f'-var={var}={val}')
-        args_list.append('-var-file=/home/pablintino/Sources/k8s/terraform/config.tfvars')
-        self.__call_tf_process(args_list, os.path.dirname(tf_file), timeout=180)
+
+        if vars_files:
+            for file in vars_files:
+                args_list.append(f'-var-file={file}')
+        if opts:
+            args_list.extend(opts)
+        return self.__run_tf_process(args_list, os.path.dirname(tf_file), timeout=180)
+
+    def plan(self, tf_file, vars_files=None, json_out=False):
+        opts = []
+        if json:
+            fd, filename = tempfile.mkstemp()
+            opts = [f'-out={filename}']
+        ret_ok = self.__run_parametrized_command('plan', tf_file, vars_files, opts=opts)
+        if ret_ok == 0 and json_out:
+            show_res, json_capture = self.show(tf_file, filename)
+            utils.safe_file_delete(filename)
+            return show_res, json_capture
+        utils.safe_file_delete(filename)
+        return ret_ok, None
+
+    def apply(self, tf_file, vars_files=None):
+        return self.__run_parametrized_command('apply', tf_file, vars_files, opts=['-auto-approve']) == 0
+
+    def destroy(self, tf_file, vars_files=None):
+        return self.__run_parametrized_command('destroy', tf_file, vars_files) == 0
+
+    def output(self, tf_file):
+        res_ok, result = self.__call_tf_process(['output', '-json'], cwd=os.path.dirname(tf_file), timeout=180)
+        return res_ok, json.loads(result) if res_ok and result else None
+
+    def show(self, tf_file, input_file=None):
+        command = ['show', '-json']
+        if input_file:
+            command.append(input_file)
+        res_ok, result = self.__call_tf_process(command, cwd=os.path.dirname(tf_file), timeout=180)
+        return res_ok, json.loads(result) if res_ok and result else None

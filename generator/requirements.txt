@@ -1,0 +1,14 @@
+jsonpath-ng==1.5.2
+ansible-runner==1.4.7
+
+
+
+#Careful with this. Maybe needs to be installed in env rather than here
+ansible==2.9.20
+cryptography==2.8
+jinja2==2.11.3
+netaddr==0.7.19
+pbr==5.4.4
+jmespath==0.9.5
+ruamel.yaml==0.16.10
+psutil==5.8.0
