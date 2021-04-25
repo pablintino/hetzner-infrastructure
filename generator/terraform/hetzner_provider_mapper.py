@@ -1,4 +1,4 @@
-from generator.configuration.models import ServerNodeModel, ResourceChange, NodeInterfaceModel, NetworkModel, \
+from generator.models.models import ServerNodeModel, ResourceChange, NodeInterfaceModel, NetworkModel, \
     SubnetModel, GroupedChanges
 from jsonpath_ng.ext import parse
 
@@ -14,6 +14,7 @@ def __parse_server_nodes(node, address):
 
 def __parse_node_interface(node, address):
     return NodeInterfaceModel(ip=node.get('ip'), mac=node.get('mac_address'), network=node.get('network_id'),
+                              server_id=node.get('server_id'), network_id=node.get('network_id'),
                               res_id=node.get('id'), res_addr=address)
 
 
@@ -24,6 +25,13 @@ def __parse_network(node, address):
 def __parse_subnet(node, address):
     return SubnetModel(ip_range=node.get('ip_range'), network_id=node.get('network_id'), res_id=node.get('id'),
                        res_addr=address)
+
+
+def __map_network_ifs_servers(resource_list):
+    server_map = {serv.id: serv for serv in resource_list if isinstance(serv, ServerNodeModel)}
+    for if_res in [resource for resource in resource_list if isinstance(resource, NodeInterfaceModel)]:
+        if if_res.server_id and if_res.server_id in server_map:
+            server_map[if_res.server_id].network_interfaces.append(if_res)
 
 
 def parse_plan(terraform_plan):
@@ -48,6 +56,23 @@ def parse_plan(terraform_plan):
             changes.append_change(resource_change, change_type)
 
     return changes
+
+
+def parse_state(terraform_state):
+    if terraform_state is None:
+        raise TypeError('terraform_state cannot be null')
+
+    resources = []
+    for resource_node in [match.value for match in parse("$.values.root_module.resources[*]").find(terraform_state)]:
+        resource_type = resource_node.get('type')
+        if resource_type not in mappers:
+            print('Not supported type')
+        else:
+            resources.append(mappers[resource_type](resource_node.get('values'), resource_node.get('address')))
+
+    __map_network_ifs_servers(resources)
+
+    return resources
 
 
 mappers['hcloud_server'] = __parse_server_nodes

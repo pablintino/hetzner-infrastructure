@@ -1,4 +1,5 @@
 from generator.exceptions.exceptions import UnsupportedChangeException
+from generator.utils import try_parseint
 
 
 class ResourceChange:
@@ -32,18 +33,22 @@ class GroupedChanges:
         else:
             raise UnsupportedChangeException(f'{change_type} not supported')
 
+
 class ResourceModel:
     def __init__(self, res_id=None, res_addr=None):
-        self.id = res_id
+        int_id = try_parseint(res_id)
+        self.id = int_id if int_id else res_id
         self.addr = res_addr
 
 
 class NodeInterfaceModel(ResourceModel):
-    def __init__(self, ip, mac, network, res_id=None, res_addr=None):
+    def __init__(self, ip, mac, network, server_id, network_id, res_id=None, res_addr=None):
         super().__init__(res_id, res_addr)
         self.ip = ip
         self.mac = mac
         self.network = network
+        self.server_id = server_id
+        self.network_id = network_id
 
 
 class ServerNodeModel(ResourceModel):
@@ -53,7 +58,7 @@ class ServerNodeModel(ResourceModel):
         self.size = size
         self.roles = roles
         self.public_ip = public_ip
-        self.interfaces_ips = {}
+        self.network_interfaces = []
 
 
 class NetworkModel(ResourceModel):

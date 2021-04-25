@@ -1,7 +1,7 @@
 import os
 import logging
 from generator.terraform.terraform_interface import Terraform
-from generator.terraform.hetzner_provider_mapper import parse_plan
+from generator.terraform.hetzner_provider_mapper import parse_plan, parse_state
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -19,7 +19,9 @@ if res:
     if plan_model.create or plan_model.update or plan_model.destroy:
         if tf.apply(main_tf_file, vars_files=var_files):
             res_ok, current_state = tf.show(main_tf_file)
+            resources = parse_state(current_state)
 
+            print('test')
 
         else:
             logger.error('An error occurred while applying infrastructure changes.')

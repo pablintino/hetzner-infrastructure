@@ -13,3 +13,9 @@ def safe_file_delete(path):
             os.remove(path)
         except OSError:
             pass
+
+def try_parseint(s):
+    try:
+        return int(s)
+    except ValueError:
+        return None
