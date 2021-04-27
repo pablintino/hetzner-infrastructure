@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 
 def remove_prefix(text, prefix):
@@ -13,6 +14,7 @@ def safe_file_delete(path):
             os.remove(path)
         except OSError:
             pass
+
 
 def try_parseint(s):
     try:

@@ -1,7 +1,7 @@
 import os
 import logging
-from generator.terraform.terraform_interface import Terraform
-from generator.terraform.hetzner_provider_mapper import parse_plan, parse_state
+from interfaces.terraform.terraform_interface import Terraform
+from interfaces.terraform.hetzner_provider_mapper import parse_plan, parse_state
 
 logging.basicConfig(level=logging.DEBUG)
 

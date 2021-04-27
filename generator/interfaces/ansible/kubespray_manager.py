@@ -1,5 +1,10 @@
+import glob
+import os
 import ansible_runner
 import logging
+
+import yaml
+
 from generator.models.models import ServerNodeModel
 
 logger = logging.getLogger(__name__)
@@ -43,6 +48,25 @@ def build_inventory(resources):
     return inventory
 
 
+def update_config_files(kubespray_inventory_dir, patches_directory):
+    for yml_path in glob.glob(patches_directory + '/**/*.yml', recursive=True):
+
+        # TODO Remove this hardcoded value
+        rel_patch = os.path.relpath(yml_path, '/home/pablintino/Sources/k8s/config/kubespray-config')
+
+        with open(yml_path, 'r') as patch:
+            patch_values = yaml.full_load(patch)
+
+        target_path = os.path.join(kubespray_inventory_dir, rel_patch)
+        with open(target_path, 'r') as target:
+            old_values = yaml.full_load(target)
+            for patch_key, patch_value in patch_values.items():
+                old_values[patch_key] = patch_value
+
+        with open(target_path, 'w') as target_file:
+            yaml.dump(old_values, target_file, width=float("inf"))
+
+
 def create_cluster(resource_list):
     if resource_list is None:
         raise TypeError('resource_list cannot be null')
@@ -68,4 +92,3 @@ def create_cluster(resource_list):
     )
 
     logger.info(f'Kubespray run finished. Result: {r}')
-

@@ -1,19 +1,17 @@
 import logging
-import argparse
 import os
 
 import ansible_runner
 
-from generator.ansible.kubespray_manager import build_inventory
-from generator.terraform.hetzner_provider_mapper import parse_state
-from generator.terraform.terraform_interface import Terraform
+from interfaces.ansible.kubespray_manager import build_inventory
+from interfaces.terraform.hetzner_provider_mapper import parse_state
+from interfaces.terraform.terraform_interface import Terraform
 
 logging.basicConfig(level=logging.DEBUG)
 
 logger = logging.getLogger(__name__)
 
 
-ansible_settings = {'become': 'true', 'become_user': 'root'}
 # TODO Remove hardcoded var
 kubespray_dir = '/home/pablintino/Desktop/kubespray'
 
@@ -39,7 +37,7 @@ r = ansible_runner.run(
     private_data_dir=kubespray_dir,
     playbook='cluster.yml',
     project_dir=kubespray_dir,
-    #settings=ansible_settings,
+    cmdline='-u root -b',
     inventory=inventory
 )
 

@@ -3,13 +3,17 @@ from generator.models.models import ServerNodeModel, ResourceChange, NodeInterfa
 from jsonpath_ng.ext import parse
 
 from generator.exceptions.exceptions import UnsupportedChangeException
+from utils import remove_prefix
 
 mappers = {}
 
 
 def __parse_server_nodes(node, address):
-    return ServerNodeModel(name=node.get('name'), size=node.get('server_type'), roles=None,
-                           public_ip=node.get('ipv4_address'), res_id=node.get('id'), res_addr=address)
+    server = ServerNodeModel(name=node.get('name'), size=node.get('server_type'), roles=None,
+                             public_ip=node.get('ipv4_address'), res_id=node.get('id'), res_addr=address)
+    server.roles = [remove_prefix(k, 'k8sgen.rol.') for k, v in node.get('labels').items() if
+                    k.startswith('k8sgen.rol.')]
+    return server
 
 
 def __parse_node_interface(node, address):

@@ -1,0 +1,8 @@
+{
+  "kubespray": {
+    "source-url": "https://github.com/kubernetes-sigs/kubespray/archive/refs/tags/v2.15.1.zip",
+    "version": "v2.15.1",
+    "remote-user": "root",
+    "patches-dir": "./kubespray-config"
+  }
+}

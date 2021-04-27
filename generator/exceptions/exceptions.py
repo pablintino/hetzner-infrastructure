@@ -1,4 +1,8 @@
-class ConfigurationValidationException(Exception):
+class ConfigurationException(Exception):
+    pass
+
+
+class PackageManagerExpcetion(Exception):
     pass
 
 
