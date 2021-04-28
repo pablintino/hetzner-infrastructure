@@ -2,7 +2,7 @@ class ConfigurationException(Exception):
     pass
 
 
-class PackageManagerExpcetion(Exception):
+class PackageManagerException(Exception):
     pass
 
 

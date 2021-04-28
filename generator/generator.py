@@ -1,6 +1,7 @@
 import os
 import logging
 
+import commands.create_cluster_command
 from exceptions.exceptions import ConfigurationException
 from options import Options
 from run_context import RunContext
@@ -20,13 +21,10 @@ def __register_command(command_name, command):
     command_registry[command_name] = command
 
 
-def __create_command(context):
-    logger.info('Call logger')
-
-
 def exec_command(options):
     try:
         run_context = RunContext(options)
+        run_context.configure()
         if options.command in command_registry:
             return command_registry[options.command](run_context)
         else:
@@ -40,4 +38,4 @@ def exec_command(options):
         run_context.destroy()
 
 
-__register_command(Options.COMMAND_CREATE, __create_command)
+__register_command(Options.COMMAND_CREATE, commands.create_cluster_command.create_cluster_command)
