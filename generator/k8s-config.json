@@ -4,9 +4,12 @@
     "remote-user": "root",
     "patches-dir": "./kubespray-config"
   },
+  "terraform" : {
+
+  },
   "packages": {
     "kubespray": {
-      "source-url": "https://github.com/kubernetes-sigs/kubespray/archive/refs/tags/v2.15.1.zip",
+      "source-url": "https://github.com/kubernetes-sigs/kubespray/archive/refs/tags/v2.15.1.tar.gz",
       "version": "v2.15.1"
     }
   }

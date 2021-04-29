@@ -1,17 +1,17 @@
 import os
 import shutil
-import zipfile
 import logging
 import tempfile
 import requests
 import validators
 
+import file_utils
 from exceptions.exceptions import PackageManagerException, ConfigurationException
 from utils import common_start
 
 
 class PackageManager:
-    SUPPORTED_EXTENSIONS = ['zip', 'tar.gz']
+    SUPPORTED_EXTENSIONS = ['zip', 'tar.gz', 'tar']
 
     __logger = logging.getLogger(__name__)
 
@@ -40,6 +40,10 @@ class PackageManager:
 
         self.package_content_path = None
 
+    def __build_file_content_folder_path(self, extension):
+        return os.path.join(
+            self.content_folder, f'{self.package_name}-{self.package_version}.{extension}')
+
     def prepare_content(self):
         self.package_content_path = self.__check_if_content_present()
         if not self.package_content_path:
@@ -47,9 +51,7 @@ class PackageManager:
             req_result = requests.get(self.source_url)
             extension = PackageManager.__calculate_extension(req_result)
 
-            # TODO Hardcoded name is duplicated
-            self.package_content_path = os.path.join(self.content_folder,
-                                                     f'{self.package_name}-{self.package_version}.{extension}')
+            self.package_content_path = self.__build_file_content_folder_path(extension)
 
             with open(self.package_content_path, 'wb') as file:
                 file.write(req_result.content)
@@ -58,10 +60,13 @@ class PackageManager:
         files = [os.path.join(self.content_folder, f) for f in os.listdir(self.content_folder) if
                  os.path.isfile(os.path.join(self.content_folder, f))]
 
-        # TODO Hardcoded name is duplicated
-        possible_files = [os.path.join(self.content_folder, f'{self.package_name}-{self.package_version}.{extension}')
-                          for
-                          extension in PackageManager.SUPPORTED_EXTENSIONS]
+        matched_extension = next(ext for ext in PackageManager.SUPPORTED_EXTENSIONS if self.source_url.endswith(ext))
+        if matched_extension:
+            possible_files = [self.__build_file_content_folder_path(matched_extension)]
+        else:
+            possible_files = [self.__build_file_content_folder_path(extension) for extension in
+                              PackageManager.SUPPORTED_EXTENSIONS]
+
         matching_files = list(set(files) & set(possible_files))
         if matching_files and len(matching_files) > 1:
             raise PackageManagerException(f'Package {self.package_name} content seems to be duplicated')
@@ -73,8 +78,11 @@ class PackageManager:
         mime_type = request_result.headers['content-type']
         if mime_type == 'application/zip':
             return 'zip'
-        elif mime_type == 'application/x-gtar' or mime_type == 'application/x-tgz' or mime_type == 'application/tar+gzip':
+        elif mime_type == 'application/x-gtar' or mime_type == 'application/x-tgz' or \
+                mime_type == 'application/tar+gzip' or mime_type == 'application/x-gzip':
             return 'tar.gz'
+        elif mime_type == 'application/x-tar':
+            return 'tar'
 
         raise PackageManagerException(f'File extension is unsupported {mime_type}')
 
@@ -82,18 +90,14 @@ class PackageManager:
         if self.package_content_path:
             target_dir = tempfile.TemporaryDirectory()
             try:
-                with zipfile.ZipFile(self.package_content_path, 'r') as zip_ref:
-                    common_path = next(file.filename for file in zip_ref.filelist if
-                                       common_start([file.filename for file in zip_ref.filelist]))
-                    zip_ref.extractall(target_dir.name)
-                    # If ZIP contains a root folder just remove it and copy content to the temporal root
-                    if all(file_info.filename.startswith(common_path) for file_info in zip_ref.filelist):
-                        for filename in os.listdir(os.path.join(target_dir.name, common_path)):
-                            shutil.move(os.path.join(target_dir.name, common_path, filename),
-                                        os.path.join(target_dir.name, filename))
-                        os.rmdir(os.path.join(target_dir.name, common_path))
+                shutil.unpack_archive(self.package_content_path, target_dir.name)
+                target_paths = os.listdir(target_dir.name)
+                common_path = next(file for file in target_paths if common_start(target_paths))
+                # If compressed file contains a root folder just remove it and copy content to the temporal root
+                if all(filename.startswith(common_path) for filename in target_paths):
+                    file_utils.move_content_to_parent(os.path.join(target_dir.name, common_path))
 
-            except (ValueError, RuntimeError) as err:
+            except (ValueError, RuntimeError):
                 raise PackageManagerException(f'Cannot extract content from source file {self.package_content_path}')
             finally:
                 self.temporal_dirs.append(target_dir)
