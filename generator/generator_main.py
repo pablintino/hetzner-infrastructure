@@ -3,7 +3,7 @@ import options
 import logging
 from generator import exec_command
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(levelname)s| %(message)s')
 
 if __name__ == '__main__':
     options = options.Options().parse(sys.argv[1:])

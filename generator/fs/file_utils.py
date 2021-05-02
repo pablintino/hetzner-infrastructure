@@ -18,7 +18,7 @@ def move_content_to_parent(directory_path, delete_directory=True):
         os.rmdir(directory_path)
 
 
-def get_create_if_not_exists(dir_path):
+def get_create_dir_if_not_exists(dir_path):
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
     return dir_path

@@ -14,10 +14,10 @@ class TemporalFsManager:
             self.temp_paths[dir_id] = tempfile.TemporaryDirectory()
         return self.temp_paths.get(dir_id).name
 
-    def get_temporal_file(self, file_id=None):
+    def get_temporal_file(self, file_id=None, ext=None):
         file_id = file_id if file_id else uuid.uuid4().hex
         if file_id not in self.temp_paths:
-            self.temp_paths[file_id] = tempfile.NamedTemporaryFile(delete=False).name
+            self.temp_paths[file_id] = tempfile.NamedTemporaryFile(delete=False, suffix=ext).name
         return self.temp_paths.get(file_id)
 
     def cleanup(self):

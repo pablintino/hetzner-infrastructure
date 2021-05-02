@@ -7,7 +7,7 @@ def remove_prefix(text, prefix):
 def try_parseint(s):
     try:
         return int(s)
-    except ValueError:
+    except (ValueError, TypeError):
         return None
 
 

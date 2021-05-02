@@ -1,5 +1,5 @@
-from generator.exceptions.exceptions import UnsupportedChangeException
-from generator.utils import try_parseint
+from exceptions.exceptions import UnsupportedChangeException
+from utils import try_parseint
 
 
 class ResourceChange:

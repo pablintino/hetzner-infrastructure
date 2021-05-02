@@ -5,6 +5,7 @@ import os.path
 class Options:
 
     COMMAND_CREATE = 'create'
+    COMMAND_DESTROY = 'destroy'
 
     def __init__(self):
         self.parser = argparse.ArgumentParser(description='Kubernetes for Hetzner Cloud generator', prog='k8sgen')
@@ -14,6 +15,10 @@ class Options:
         # create the parser for the "command_a" command
         parser_a = subparsers.add_parser(Options.COMMAND_CREATE, help='Creates a new cluster')
         parser_a.add_argument('bar', type=int, help='bar help')
+
+
+        parser_b = subparsers.add_parser(Options.COMMAND_DESTROY, help='Destroy the cluster')
+        parser_b.add_argument('bar', type=int, help='bar help')
 
     def parse(self, args):
         return self.parser.parse_args(args)

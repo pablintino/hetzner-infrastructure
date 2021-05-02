@@ -1,15 +1,15 @@
 import os
 import sys
 import json
+import utils
 import select
 import logging
 import tempfile
 import threading
 import subprocess
+import fs.file_utils
 import distutils.spawn
 
-import fs.file_utils
-from generator import utils
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +70,7 @@ class Terraform:
             timer.cancel()
 
         logger.debug(f'TF execution finished. Return code {ret_code}')
-        return ret_code
+        return ret_code == 0 or (ret_code == 2 and '-detailed-exitcode' in arg_list)
 
     def __run_parametrized_command(self, command, tf_file, vars_files=None, opts=None):
         args_list = [command]
@@ -82,41 +82,55 @@ class Terraform:
                 args_list.append(f'-var-file={file}')
         if opts:
             args_list.extend(opts)
-        return self.__run_tf_process(args_list, os.path.dirname(tf_file), timeout=180)
+        return self.__run_tf_process(args_list, os.path.dirname(tf_file) if os.path.isfile(tf_file) else tf_file,
+                                     timeout=180)
 
-    def plan(self, tf_file, vars_files=None, json_out=False):
+    def plan(self, tf_file, vars_files=None, json_out=False, state_file=None):
         opts = []
         if json:
             fd, filename = tempfile.mkstemp()
             opts = [f'-out={filename}']
+        if state_file:
+            opts.append(f'-state={state_file}')
         ret_ok = self.__run_parametrized_command('plan', tf_file, vars_files, opts=opts)
-        if ret_ok == 0 and json_out:
+        if ret_ok and json_out:
             show_res, json_capture = self.show(tf_file, filename)
             fs.file_utils.safe_file_delete(filename)
             return show_res, json_capture
         fs.file_utils.safe_file_delete(filename)
         return ret_ok, None
 
-    def apply(self, tf_file, vars_files=None):
-        return self.__run_parametrized_command('apply', tf_file, vars_files, opts=['-auto-approve']) == 0
+    def apply(self, tf_file, vars_files=None, state_file=None):
+        opts = ['-auto-approve']
+        if state_file:
+            opts.append(f'-state={state_file}')
+        return self.__run_parametrized_command('apply', tf_file, vars_files, opts=opts)
 
-    def destroy(self, tf_file, vars_files=None):
-        return self.__run_parametrized_command('destroy', tf_file, vars_files) == 0
+    def destroy(self, tf_file, vars_files=None, state_file=None):
+        opts = ['-auto-approve']
+        if state_file:
+            opts.append(f'-state={state_file}')
+        return self.__run_parametrized_command('destroy', tf_file, vars_files, opts=opts)
 
     def output(self, tf_file):
-        res_ok, result = self.__call_tf_process(['output', '-json'], cwd=os.path.dirname(tf_file), timeout=180)
+        res_ok, result = self.__call_tf_process(['output', '-json'],
+                                                cwd=os.path.dirname(tf_file) if os.path.isfile(tf_file) else tf_file,
+                                                timeout=180)
         return res_ok, json.loads(result) if res_ok and result else None
 
     def init(self, tf_file, plugins_dir=None):
         command = ['init']
         if plugins_dir:
-            command.append(f'----plugin-dir={plugins_dir}')
+            command.append(f'--plugin-dir={plugins_dir}')
 
-        res_ok, result = self.__call_tf_process(command, cwd=os.path.dirname(tf_file), timeout=180)
+        res_ok, result = self.__call_tf_process(command,
+                                                cwd=os.path.dirname(tf_file) if os.path.isfile(tf_file) else tf_file,
+                                                timeout=180)
         return res_ok
 
     def providers_mirror(self, tf_file, plugins_dir):
-        res_ok, result = self.__call_tf_process(['providers', 'mirror', plugins_dir], cwd=os.path.dirname(tf_file),
+        res_ok, result = self.__call_tf_process(['providers', 'mirror', plugins_dir],
+                                                cwd=os.path.dirname(tf_file) if os.path.isfile(tf_file) else tf_file,
                                                 timeout=180)
         return res_ok
 
@@ -124,5 +138,7 @@ class Terraform:
         command = ['show', '-json']
         if input_file:
             command.append(input_file)
-        res_ok, result = self.__call_tf_process(command, cwd=os.path.dirname(tf_file), timeout=180)
+        res_ok, result = self.__call_tf_process(command,
+                                                cwd=os.path.dirname(tf_file) if os.path.isfile(tf_file) else tf_file,
+                                                timeout=180)
         return res_ok, json.loads(result) if res_ok and result else None

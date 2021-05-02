@@ -1,8 +1,8 @@
-from generator.models.models import ServerNodeModel, ResourceChange, NodeInterfaceModel, NetworkModel, \
+from models.models import ServerNodeModel, ResourceChange, NodeInterfaceModel, NetworkModel, \
     SubnetModel, GroupedChanges
 from jsonpath_ng.ext import parse
 
-from generator.exceptions.exceptions import UnsupportedChangeException
+from exceptions.exceptions import UnsupportedChangeException
 from utils import remove_prefix
 
 mappers = {}

@@ -2,6 +2,7 @@ import os
 import logging
 
 import commands.create_cluster_command
+import commands.destroy_cluster_command
 from exceptions.exceptions import ConfigurationException
 from options import Options
 from run_context import RunContext
@@ -39,3 +40,4 @@ def exec_command(options):
 
 
 __register_command(Options.COMMAND_CREATE, commands.create_cluster_command.create_cluster_command)
+__register_command(Options.COMMAND_DESTROY, commands.destroy_cluster_command.destroy_cluster_command)

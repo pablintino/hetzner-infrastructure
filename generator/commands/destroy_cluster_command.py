@@ -7,7 +7,7 @@ from interfaces.terraform.terraform_interface import Terraform
 __logger = logging.getLogger(__name__)
 
 
-def create_cluster_command(context):
+def destroy_cluster_command(context):
     terraform_content = context.terraform_config.package_manager.get_content()
 
     tf = Terraform()
@@ -26,15 +26,10 @@ def create_cluster_command(context):
     with open(tf_vars_file, 'w') as file:
         json.dump(context.terraform_config.infra_config, file)
 
-    res, output = tf.plan(terraform_content, [tf_vars_file], True, state_file=context.cluster_space.tf_state_file)
+    res = tf.destroy(terraform_content, [tf_vars_file], state_file=context.cluster_space.tf_state_file)
     if res:
-        # TODO Make some validations
-        #plan_changes = hetzner_provider_mapper.parse_plan(output)
-        res = tf.apply(terraform_content, [tf_vars_file], state_file=context.cluster_space.tf_state_file)
-        if res:
-            __logger.info('Infrastructure successfully created')
-        else:
-            __logger.info('Failed to create infrastructure')
-            return False
+        __logger.info('Infrastructure successfully destroyed')
+    else:
+        __logger.info('Failed to destroy infrastructure')
 
-    __logger.info(output)
+    return res

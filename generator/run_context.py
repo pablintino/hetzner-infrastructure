@@ -3,7 +3,6 @@ import re
 import json
 import logging
 
-
 from exceptions.exceptions import ConfigurationException
 from fs.cluster_space import ClusterSpace
 from fs.package_manager import PackageManager
@@ -99,7 +98,10 @@ class RunContext:
             return current_dir_path
 
         user_path = os.path.join(os.path.join(os.path.expanduser('~'), '.k8sgen'), 'k8s-config.json')
-        return user_path if os.path.isfile(user_path) else None
+        if os.path.isfile(user_path):
+            return user_path
+
+        raise ConfigurationException('No json configuration file present')
 
     def __parse_configuration(self):
         if self.json_path:
@@ -108,8 +110,6 @@ class RunContext:
                     return json.load(json_file)
             except ValueError:
                 raise ConfigurationException('Cannot load generator configuration')
-        else:
-            raise ConfigurationException('No json configuration file present')
 
     def destroy(self):
         self.temporal_fs.cleanup()
