@@ -75,9 +75,9 @@ class PackageManager:
             try:
                 shutil.unpack_archive(self.package_content_path, target_dir)
                 target_paths = os.listdir(target_dir)
-                common_path = next(file for file in target_paths if common_start(target_paths))
+                common_path = next((file for file in target_paths if common_start(target_paths)), None)
                 # If compressed file contains a root folder just remove it and copy content to the temporal root
-                if all(filename.startswith(common_path) for filename in target_paths):
+                if common_path and all(filename.startswith(common_path) for filename in target_paths):
                     file_utils.move_content_to_parent(os.path.join(target_dir, common_path))
 
             except (ValueError, RuntimeError):
