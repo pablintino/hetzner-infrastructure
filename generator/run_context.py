@@ -13,6 +13,7 @@ from fs.temporal_fs_manager import TemporalFsManager
 class GlobalClusterSettings:
 
     def __init__(self, config_dict):
+        # TODO Replace this key retrieval code as is repetitive. Make something more reusable and clean
         self.cluster_name = config_dict.get('cluster-name', None)
         if not self.cluster_name:
             raise ConfigurationException('Cluster name is null or empty in configuration')
@@ -24,11 +25,17 @@ class GlobalClusterSettings:
 
 class TerraformConfiguration:
 
-    def __init__(self, config_dict):
+    def __init__(self, config_dict, packages):
         if 'terraform' in config_dict:
             self.infra_config = config_dict['terraform'].get('infra-config', None)
             if not self.infra_config:
                 raise ConfigurationException('Terraform configuration has no infrastructure configuration')
+
+            # TODO Replace this key retrieval code as is repetitive. Make something more reusable and clean
+            self.package_name = config_dict['terraform'].get('package', None)
+            self.package_manager = packages[self.package_name] if self.package_name in packages else None
+            if not self.package_manager:
+                raise ConfigurationException('Terraform configuration has an invalid package association')
 
         else:
             raise ConfigurationException('No Terraform configuration found in generator configuration')
@@ -38,6 +45,7 @@ class KubesprayConfiguration:
 
     def __init__(self, config_dict, packages):
         if 'kubespray' in config_dict:
+            # TODO Replace this key retrieval code as is repetitive. Make something more reusable and clean
             self.remote_user = config_dict['kubespray'].get('remote-user')
             self.patches_dir = config_dict['kubespray'].get('patches-dir')
             self.package_name = config_dict['kubespray'].get('package')
@@ -70,7 +78,7 @@ class RunContext:
         # Parse and process declared packages
         self.__prepare_packages(configuration)
         self.kubespray_config = KubesprayConfiguration(configuration, self.packages)
-        self.terraform_config = TerraformConfiguration(configuration)
+        self.terraform_config = TerraformConfiguration(configuration, self.packages)
         self.cluster_space = ClusterSpace(self.global_settings.cluster_name)
 
     def __prepare_packages(self, configuration):
