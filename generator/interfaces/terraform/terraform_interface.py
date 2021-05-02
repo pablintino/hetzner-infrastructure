@@ -7,6 +7,8 @@ import tempfile
 import threading
 import subprocess
 import distutils.spawn
+
+import fs.file_utils
 from generator import utils
 
 logger = logging.getLogger(__name__)
@@ -90,9 +92,9 @@ class Terraform:
         ret_ok = self.__run_parametrized_command('plan', tf_file, vars_files, opts=opts)
         if ret_ok == 0 and json_out:
             show_res, json_capture = self.show(tf_file, filename)
-            utils.safe_file_delete(filename)
+            fs.file_utils.safe_file_delete(filename)
             return show_res, json_capture
-        utils.safe_file_delete(filename)
+        fs.file_utils.safe_file_delete(filename)
         return ret_ok, None
 
     def apply(self, tf_file, vars_files=None):
@@ -104,6 +106,19 @@ class Terraform:
     def output(self, tf_file):
         res_ok, result = self.__call_tf_process(['output', '-json'], cwd=os.path.dirname(tf_file), timeout=180)
         return res_ok, json.loads(result) if res_ok and result else None
+
+    def init(self, tf_file, plugins_dir=None):
+        command = ['init']
+        if plugins_dir:
+            command.append(f'----plugin-dir={plugins_dir}')
+
+        res_ok, result = self.__call_tf_process(command, cwd=os.path.dirname(tf_file), timeout=180)
+        return res_ok
+
+    def providers_mirror(self, tf_file, plugins_dir):
+        res_ok, result = self.__call_tf_process(['providers', 'mirror', plugins_dir], cwd=os.path.dirname(tf_file),
+                                                timeout=180)
+        return res_ok
 
     def show(self, tf_file, input_file=None):
         command = ['show', '-json']

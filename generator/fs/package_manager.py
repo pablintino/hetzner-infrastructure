@@ -5,7 +5,7 @@ import tempfile
 import requests
 import validators
 
-import file_utils
+from fs import file_utils
 from exceptions.exceptions import PackageManagerException, ConfigurationException
 from utils import common_start
 
@@ -15,16 +15,16 @@ class PackageManager:
 
     __logger = logging.getLogger(__name__)
 
-    def __init__(self, package_name, package_metadata):
-        self.temporal_dirs = []
+    def __init__(self, package_name, package_metadata, temporal_fs_manager):
+        self.temporal_fs_manager = temporal_fs_manager
         if not package_name:
             raise ValueError('package_name cannot be null or empty')
         if not package_metadata:
             raise ValueError('package_metadata cannot be null or empty')
 
         self.package_name = package_name
-        self.k8s_folder = os.path.join(os.path.expanduser('~'), '.k8sgen')
-        self.content_folder = os.path.join(self.k8s_folder, 'content')
+        k8s_folder = file_utils.get_generator_user_path()
+        self.content_folder = os.path.join(k8s_folder, 'content')
 
         self.source_url = package_metadata.get('source-url')
         if not validators.url(self.source_url):
@@ -33,7 +33,7 @@ class PackageManager:
         if not self.package_version:
             raise ConfigurationException(f'{self.package_name} version is empty')
 
-        if not os.path.exists(self.k8s_folder):
+        if not os.path.exists(k8s_folder):
             os.mkdir(self.files_folder)
         if not os.path.exists(self.content_folder):
             os.mkdir(self.content_folder)
@@ -55,6 +55,23 @@ class PackageManager:
 
             with open(self.package_content_path, 'wb') as file:
                 file.write(req_result.content)
+
+    def get_content(self):
+        if self.package_content_path:
+            target_dir = self.temporal_fs_manager.get_temporal_directory()
+            try:
+                shutil.unpack_archive(self.package_content_path, target_dir)
+                target_paths = os.listdir(target_dir)
+                common_path = next(file for file in target_paths if common_start(target_paths))
+                # If compressed file contains a root folder just remove it and copy content to the temporal root
+                if all(filename.startswith(common_path) for filename in target_paths):
+                    file_utils.move_content_to_parent(os.path.join(target_dir, common_path))
+
+            except (ValueError, RuntimeError):
+                raise PackageManagerException(f'Cannot extract content from source file {self.package_content_path}')
+            return target_dir
+
+        return None
 
     def __check_if_content_present(self):
         files = [os.path.join(self.content_folder, f) for f in os.listdir(self.content_folder) if
@@ -86,25 +103,4 @@ class PackageManager:
 
         raise PackageManagerException(f'File extension is unsupported {mime_type}')
 
-    def get_content(self):
-        if self.package_content_path:
-            target_dir = tempfile.TemporaryDirectory()
-            try:
-                shutil.unpack_archive(self.package_content_path, target_dir.name)
-                target_paths = os.listdir(target_dir.name)
-                common_path = next(file for file in target_paths if common_start(target_paths))
-                # If compressed file contains a root folder just remove it and copy content to the temporal root
-                if all(filename.startswith(common_path) for filename in target_paths):
-                    file_utils.move_content_to_parent(os.path.join(target_dir.name, common_path))
 
-            except (ValueError, RuntimeError):
-                raise PackageManagerException(f'Cannot extract content from source file {self.package_content_path}')
-            finally:
-                self.temporal_dirs.append(target_dir)
-            return target_dir.name
-
-        return None
-
-    def clean(self):
-        for temp_dir in self.temporal_dirs:
-            temp_dir.cleanup()

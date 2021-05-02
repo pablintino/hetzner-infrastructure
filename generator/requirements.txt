@@ -7,6 +7,8 @@ chardet==4.0.0
 cryptography==2.8
 decorator==5.0.7
 docutils==0.17.1
+gitdb==4.0.7
+GitPython==3.1.14
 idna==2.10
 iniconfig==1.1.1
 Jinja2==2.11.3
@@ -15,6 +17,7 @@ jsonpath-ng==1.5.2
 lockfile==0.12.2
 MarkupSafe==1.1.1
 netaddr==0.7.19
+npath==0.0.1
 packaging==20.9
 pbr==5.4.4
 pexpect==4.8.0
@@ -32,6 +35,7 @@ requests==2.25.1
 ruamel.yaml==0.16.10
 ruamel.yaml.clib==0.2.2
 six==1.15.0
+smmap==4.0.0
 toml==0.10.2
 urllib3==1.26.4
 validators==0.18.2

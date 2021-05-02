@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 main_tf_file = '../terraform/hetzner-k8s-cluster.tf'
-config_vars_filename = os.path.join(os.path.dirname(main_tf_file), 'config.tfvars')
+config_vars_filename = os.path.join(os.path.dirname(main_tf_file), 'config.json')
 var_files = [config_vars_filename] if os.path.isfile(config_vars_filename) else None
 
 

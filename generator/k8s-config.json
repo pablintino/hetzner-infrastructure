@@ -1,16 +1,56 @@
 {
+  "cluster-name": "test-cluster",
   "kubespray": {
     "package": "kubespray",
     "remote-user": "root",
     "patches-dir": "./kubespray-config"
   },
-  "terraform" : {
-
+  "terraform": {
+    "package" : "terraform",
+    "infra-config": {
+      "servers": {
+        "master-1": {
+          "server_type": "cx21",
+          "location": "nbg1",
+          "node_type": [
+            "kube_control_plane",
+            "etcd"
+          ]
+        },
+        "master-2": {
+          "server_type": "cx21",
+          "location": "nbg1",
+          "node_type": [
+            "kube_control_plane",
+            "etcd"
+          ]
+        },
+        "master-3": {
+          "server_type": "cx21",
+          "location": "nbg1",
+          "node_type": [
+            "kube_control_plane",
+            "etcd"
+          ]
+        },
+        "worker-1": {
+          "server_type": "cx21",
+          "location": "nbg1",
+          "node_type": [
+            "kube-node"
+          ]
+        }
+      }
+    }
   },
   "packages": {
     "kubespray": {
       "source-url": "https://github.com/kubernetes-sigs/kubespray/archive/refs/tags/v2.15.1.tar.gz",
       "version": "v2.15.1"
+    },
+    "terraform": {
+      "source-url": "git@github.com:pablintino/terraform-infraestructure.git",
+      "version": "0.0.1a"
     }
   }
 }
