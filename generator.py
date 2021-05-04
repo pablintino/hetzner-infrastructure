@@ -1,8 +1,7 @@
 import os
 import logging
 
-import commands.create_cluster_command
-import commands.destroy_cluster_command
+from commands.terraform_based_commands import CreateClusterCommand, DestroyClusterCommand
 from exceptions.exceptions import ConfigurationException
 from options import Options
 from run_context import RunContext
@@ -25,9 +24,9 @@ def __register_command(command_name, command):
 def exec_command(options):
     try:
         run_context = RunContext(options)
-        run_context.configure()
+        run_context.configure().validate()
         if options.command in command_registry:
-            return command_registry[options.command](run_context)
+            return command_registry[options.command](run_context).run()
         else:
             logger.error('Unrecognised command')
             return os.EX_USAGE
@@ -39,5 +38,5 @@ def exec_command(options):
         run_context.destroy()
 
 
-__register_command(Options.COMMAND_CREATE, commands.create_cluster_command.create_cluster_command)
-__register_command(Options.COMMAND_DESTROY, commands.destroy_cluster_command.destroy_cluster_command)
+__register_command(Options.COMMAND_CREATE, CreateClusterCommand)
+__register_command(Options.COMMAND_DESTROY, DestroyClusterCommand)

@@ -28,6 +28,7 @@ class PackageManager:
         k8s_folder = file_utils.get_generator_user_path()
         self.content_folder = os.path.join(k8s_folder, 'content')
         self.package_content_path = None
+        self.reusable_content = None
 
         self.source_url = package_metadata.get('source-url')
         if not validators.url(self.source_url) and not giturlparse.parse(self.source_url).valid:
@@ -69,8 +70,13 @@ class PackageManager:
             else:
                 self.__prepare_http_content()
 
-    def get_content(self):
+    def get_content(self, reusable=False):
         if self.package_content_path:
+
+            # Some previous call has created a reusable path. Return it directly
+            if reusable and self.reusable_content:
+                return self.reusable_content
+
             target_dir = self.temporal_fs_manager.get_temporal_directory()
             try:
                 shutil.unpack_archive(self.package_content_path, target_dir)
@@ -82,6 +88,11 @@ class PackageManager:
 
             except (ValueError, RuntimeError):
                 raise PackageManagerException(f'Cannot extract content from source file {self.package_content_path}')
+
+            # The call indicated that the content can be used afterwards safely (maybe readonly operations). Store it
+            if reusable:
+                self.reusable_content = target_dir
+
             return target_dir
 
         return None

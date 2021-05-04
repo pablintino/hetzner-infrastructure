@@ -121,7 +121,7 @@ class Terraform:
     def init(self, tf_file, plugins_dir=None):
         command = ['init']
         if plugins_dir:
-            command.append(f'--plugin-dir={plugins_dir}')
+            command.append(f'-plugin-dir={plugins_dir}')
 
         res_ok, result = self.__call_tf_process(command,
                                                 cwd=os.path.dirname(tf_file) if os.path.isfile(tf_file) else tf_file,

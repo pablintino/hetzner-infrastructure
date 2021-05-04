@@ -3,7 +3,12 @@
   "kubespray": {
     "package": "kubespray",
     "remote-user": "root",
-    "patches-dir": "./kubespray-config"
+    "patches":[
+      {
+        "path": "k8s-cluster/k8s-cluster.yml|kubeconfig_localhost",
+        "value": true
+      }
+    ]
   },
   "terraform": {
     "package" : "terraform",
@@ -13,7 +18,7 @@
           "server_type": "cx21",
           "location": "nbg1",
           "node_type": [
-            "kube_control_plane",
+            "kube-master",
             "etcd"
           ]
         },
@@ -21,7 +26,7 @@
           "server_type": "cx21",
           "location": "nbg1",
           "node_type": [
-            "kube_control_plane",
+            "kube-master",
             "etcd"
           ]
         },
@@ -29,7 +34,7 @@
           "server_type": "cx21",
           "location": "nbg1",
           "node_type": [
-            "kube_control_plane",
+            "kube-master",
             "etcd"
           ]
         },

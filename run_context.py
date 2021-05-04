@@ -2,7 +2,7 @@ import os
 import re
 import json
 import logging
-
+import commands.validators
 from exceptions.exceptions import ConfigurationException
 from fs.cluster_space import ClusterSpace
 from fs.package_manager import PackageManager
@@ -46,7 +46,7 @@ class KubesprayConfiguration:
         if 'kubespray' in config_dict:
             # TODO Replace this key retrieval code as is repetitive. Make something more reusable and clean
             self.remote_user = config_dict['kubespray'].get('remote-user')
-            self.patches_dir = config_dict['kubespray'].get('patches-dir')
+            self.patches = config_dict['kubespray'].get('patches')
             self.package_name = config_dict['kubespray'].get('package')
             self.package_manager = packages[self.package_name] if self.package_name in packages else None
             if not self.package_manager:
@@ -79,6 +79,13 @@ class RunContext:
         self.kubespray_config = KubesprayConfiguration(configuration, self.packages)
         self.terraform_config = TerraformConfiguration(configuration, self.packages)
         self.cluster_space = ClusterSpace(self.global_settings.cluster_name)
+
+        return self
+
+    def validate(self):
+        for validator in commands.validators.context_validators:
+            validator(self)
+        return self
 
     def __prepare_packages(self, configuration):
         packages_config_node = configuration.get('packages')
