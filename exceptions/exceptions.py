@@ -6,6 +6,10 @@ class UnexpectedTerraformFailureException(Exception):
     pass
 
 
+class SSHKeysException(Exception):
+    pass
+
+
 class PackageManagerException(Exception):
     pass
 

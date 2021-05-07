@@ -75,7 +75,7 @@ class KubesprayManager:
         if resources is None:
             raise TypeError('resources cannot be null')
 
-        #TODO Be aware of naming changes in kubespray
+        # TODO Be aware of naming changes in kubespray
         inventory = {'all': {'hosts': {}, 'children': {}}}
         inventory['all']['children']['kube-master'] = {'hosts': {}}
         inventory['all']['children']['kube-node'] = {'hosts': {}}
@@ -137,18 +137,20 @@ class KubesprayManager:
         # proyect_base/inventory/hosts => Ansible inventory file as usual
         # proyect_base/inventory/group_vars => All the files inside the original kubespray vars examples. Edit as needed.
 
-        # TODO Temporal until SSH key management is implemented
-        os.makedirs(os.path.join(self.content_folder, 'inventory/env'))
-        shutil.copyfile(os.path.join(os.path.expanduser('~'), '.ssh/id_rsa'),
-                        os.path.join(self.content_folder, 'inventory/env/shh_key'))
-
-        #TODO Temporal
+        # TODO Temporal
         r = ansible_runner.run(
             private_data_dir=self.content_folder,
             playbook='cluster.yml',
             project_dir=self.content_folder,
             cmdline='-u root -b',
-            inventory=self.current_inventory
+            inventory=self.current_inventory,
+            ssh_key=self.context.ssh_key_manager.pk_data
         )
+
+        if r.rc == 0 and r.status == 'successful':
+            admin_file = os.path.join(self.content_folder, 'inventory/artifacts/admin.conf')
+            if os.path.exists(admin_file):
+                shutil.copyfile(admin_file, self.context.cluster_space.kubectl_file)
+            # TODO  Check if admin.conf is not in the folder and kubespray is configured to copy it to localhost
 
         logger.info(f'Kubespray run finished. Result: {r}')

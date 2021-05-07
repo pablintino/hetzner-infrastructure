@@ -18,6 +18,14 @@ def move_content_to_parent(directory_path, delete_directory=True):
         os.rmdir(directory_path)
 
 
+def get_file_as_text(path):
+    try:
+        with open(path, 'r') as file:
+            return file.read()
+    except OSError:
+        return None
+
+
 def get_create_dir_if_not_exists(dir_path):
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)

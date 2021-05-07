@@ -2,11 +2,11 @@ import os
 import re
 import json
 import logging
-import commands.validators
 from exceptions.exceptions import ConfigurationException
 from fs.cluster_space import ClusterSpace
 from fs.package_manager import PackageManager
 from fs.temporal_fs_manager import TemporalFsManager
+from ssh_key_manager import SshRsaKeyManager
 
 
 class GlobalClusterSettings:
@@ -68,6 +68,7 @@ class RunContext:
         self.global_settings = None
         self.cluster_space = None
         self.temporal_fs = TemporalFsManager()
+        self.ssh_key_manager = SshRsaKeyManager(options)
 
     def configure(self):
         self.json_path = self.__get_config_path()
@@ -82,10 +83,8 @@ class RunContext:
 
         return self
 
-    def validate(self):
-        for validator in commands.validators.context_validators:
-            validator(self)
-        return self
+    def load_ssh(self):
+        self.ssh_key_manager.load()
 
     def __prepare_packages(self, configuration):
         packages_config_node = configuration.get('packages')

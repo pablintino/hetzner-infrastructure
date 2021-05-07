@@ -3,6 +3,7 @@ import json
 from abc import ABC
 import interfaces.terraform.hetzner_provider_mapper
 from commands.command import Command
+from commands.validators.command_validators import KubesprayPatchesValidator
 from exceptions.exceptions import UnexpectedTerraformFailureException
 from interfaces.ansible.kubespray_manager import KubesprayManager
 from interfaces.terraform.terraform_interface import Terraform
@@ -11,7 +12,7 @@ from interfaces.terraform.terraform_interface import Terraform
 class TerraformBaseCommand(Command, ABC):
 
     def __init__(self, context):
-        super().__init__(context)
+        super().__init__(context, context_validators=[KubesprayPatchesValidator])
         self.terraform_content = None
         self.tf = Terraform()
 
@@ -52,6 +53,7 @@ class CreateClusterCommand(TerraformBaseCommand):
             if res:
                 # TODO Make some validations
                 # plan_changes = hetzner_provider_mapper.parse_plan(output)
+                # TODO Call apply with the planned state instead of recalculate all
                 res = self.tf.apply(self.terraform_content, [infra_settings_file],
                                     state_file=self.context.cluster_space.tf_state_file)
                 if res:
@@ -61,11 +63,10 @@ class CreateClusterCommand(TerraformBaseCommand):
 
                 else:
                     self.logger.info('Failed to create infrastructure')
-                    return False
 
         except UnexpectedTerraformFailureException as err:
             self.logger.error(err)
-            return False
+            # TODO Raise to end with a proper exit code
 
 
 class DestroyClusterCommand(TerraformBaseCommand):
