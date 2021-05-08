@@ -2,12 +2,12 @@ import os
 import json
 import interfaces.terraform.hetzner_provider_mapper
 
-
 from abc import ABC
 from commands.command import Command
 from commands.validators.command_validators import KubesprayPatchesValidator
 from exceptions.exceptions import UnexpectedTerraformFailureException
 from interfaces.ansible.kubespray_manager import KubesprayManager
+from interfaces.terraform import hetzner_provider_mapper
 from interfaces.terraform.terraform_interface import Terraform
 
 
@@ -50,14 +50,18 @@ class CreateClusterCommand(TerraformBaseCommand):
         try:
             self.prepare_arena()
             infra_settings_file = self.get_dumped_infra_settings()
-            res, output = self.tf.plan(self.terraform_content, [infra_settings_file], True,
+
+            tf_vars = {'ssh_public_key': self.context.ssh_key_manager.get_public_rsa_key_opnessh()}
+
+            res, output = self.tf.plan(self.terraform_content, [infra_settings_file], tf_vars, True,
                                        state_file=self.context.cluster_space.tf_state_file)
             if res:
                 # TODO Make some validations
-                # plan_changes = hetzner_provider_mapper.parse_plan(output)
+                plan_changes = hetzner_provider_mapper.parse_plan(output)
                 # TODO Call apply with the planned state instead of recalculate all
-                res = self.tf.apply(self.terraform_content, [infra_settings_file],
-                                    state_file=self.context.cluster_space.tf_state_file)
+                if plan_changes.create or plan_changes.destroy or plan_changes.update:
+                    res = self.tf.apply(self.terraform_content, [infra_settings_file], tf_vars,
+                                        state_file=self.context.cluster_space.tf_state_file)
                 if res:
                     self.logger.info('Infrastructure successfully created')
                     spray = KubesprayManager(self.context, self.get_state_resources())
@@ -81,9 +85,13 @@ class DestroyClusterCommand(TerraformBaseCommand):
         try:
             self.prepare_arena()
             infra_settings_file = self.get_dumped_infra_settings()
-            res = self.tf.destroy(self.terraform_content, [infra_settings_file],
+
+            tf_vars = {'ssh_public_key': self.context.ssh_key_manager.get_public_rsa_key_opnessh()}
+            res = self.tf.destroy(self.terraform_content, [infra_settings_file], tf_vars,
                                   state_file=self.context.cluster_space.tf_state_file)
+
             if res:
+                self.context.cluster_space.destroy_cluster_space()
                 self.logger.info('Infrastructure successfully destroyed')
             else:
                 self.logger.info('Failed to destroy infrastructure')

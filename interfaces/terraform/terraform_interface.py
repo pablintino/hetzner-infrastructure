@@ -10,7 +10,6 @@ import subprocess
 import fs.file_utils
 import distutils.spawn
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -72,9 +71,12 @@ class Terraform:
         logger.debug(f'TF execution finished. Return code {ret_code}')
         return ret_code == 0 or (ret_code == 2 and '-detailed-exitcode' in arg_list)
 
-    def __run_parametrized_command(self, command, tf_file, vars_files=None, opts=None):
+    def __run_parametrized_command(self, command, tf_file, vars_files=None, tf_vars=None, opts=None):
         args_list = [command]
-        for var, val in Terraform.__gather_env_vars().items():
+        vars_dict = Terraform.__gather_env_vars()
+        if tf_vars:
+            vars_dict.update(tf_vars)
+        for var, val in vars_dict.items():
             args_list.append(f'-var={var}={val}')
 
         if vars_files:
@@ -85,14 +87,14 @@ class Terraform:
         return self.__run_tf_process(args_list, os.path.dirname(tf_file) if os.path.isfile(tf_file) else tf_file,
                                      timeout=180)
 
-    def plan(self, tf_file, vars_files=None, json_out=False, state_file=None):
+    def plan(self, tf_file, vars_files=None, vars_dict=None, json_out=False, state_file=None):
         opts = []
         if json:
             fd, filename = tempfile.mkstemp()
             opts = [f'-out={filename}']
         if state_file:
             opts.append(f'-state={state_file}')
-        ret_ok = self.__run_parametrized_command('plan', tf_file, vars_files, opts=opts)
+        ret_ok = self.__run_parametrized_command('plan', tf_file, vars_files, vars_dict, opts=opts)
         if ret_ok and json_out:
             show_res, json_capture = self.show(tf_file, filename)
             fs.file_utils.safe_file_delete(filename)
@@ -100,17 +102,17 @@ class Terraform:
         fs.file_utils.safe_file_delete(filename)
         return ret_ok, None
 
-    def apply(self, tf_file, vars_files=None, state_file=None):
+    def apply(self, tf_file, vars_files=None, vars_dict=None, state_file=None):
         opts = ['-auto-approve']
         if state_file:
             opts.append(f'-state={state_file}')
-        return self.__run_parametrized_command('apply', tf_file, vars_files, opts=opts)
+        return self.__run_parametrized_command('apply', tf_file, vars_files, vars_dict, opts=opts)
 
-    def destroy(self, tf_file, vars_files=None, state_file=None):
+    def destroy(self, tf_file, vars_files=None, vars_dict=None, state_file=None):
         opts = ['-auto-approve']
         if state_file:
             opts.append(f'-state={state_file}')
-        return self.__run_parametrized_command('destroy', tf_file, vars_files, opts=opts)
+        return self.__run_parametrized_command('destroy', tf_file, vars_files, vars_dict, opts=opts)
 
     def output(self, tf_file):
         res_ok, result = self.__call_tf_process(['output', '-json'],

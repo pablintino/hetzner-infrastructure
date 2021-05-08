@@ -122,8 +122,6 @@ class KubesprayManager:
         # Delete sample inventory.ini (usually not present)
         file_utils.safe_file_delete(os.path.join(dest, 'inventory.ini'))
 
-        # Prepare ssh pk. Write to env/ssh_key or at least load it to provide it to ansible as a param
-
         # Apply config patches
         KubesprayPatcher(self.content_folder, self.context.kubespray_config.patches).patch()
 
@@ -155,7 +153,7 @@ class KubesprayManager:
             project_dir=self.content_folder,
             cmdline=self.__calculate_command_line_args(),
             inventory=self.current_inventory,
-            ssh_key=self.context.ssh_key_manager.pk_data
+            ssh_key=self.context.ssh_key_manager.get_private_rsa_key_pem()
         )
 
         if r.rc == 0 and r.status == 'successful':
