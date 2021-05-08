@@ -7,7 +7,6 @@ from commands.terraform_based_commands import CreateClusterCommand, DestroyClust
 from exceptions.exceptions import ConfigurationException, SSHKeysException
 from run_context import RunContext
 
-
 logging.basicConfig(level=logging.INFO, format='%(levelname)s| %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -32,12 +31,12 @@ def prepare_requirements(command, context):
         validator(context).validate()
 
 
-def exec_command(options):
+def exec_command(run_options):
     try:
-        run_context = RunContext(options)
+        run_context = RunContext(run_options)
         run_context.configure()
-        if options.command in command_registry:
-            command_instance = command_registry[options.command](run_context)
+        if run_options.command in command_registry:
+            command_instance = command_registry[run_options.command](run_context)
             prepare_requirements(command_instance, run_context)
             command_instance.run()
         else:
@@ -52,7 +51,6 @@ def exec_command(options):
 
 
 if __name__ == '__main__':
-
     __register_command(options.Options.COMMAND_CREATE, CreateClusterCommand)
     __register_command(options.Options.COMMAND_DESTROY, DestroyClusterCommand)
 

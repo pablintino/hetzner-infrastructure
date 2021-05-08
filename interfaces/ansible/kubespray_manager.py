@@ -1,6 +1,7 @@
 import os
 import re
 import yaml
+import utils
 import shutil
 import logging
 import dpath.util
@@ -126,23 +127,33 @@ class KubesprayManager:
         # Apply config patches
         KubesprayPatcher(self.content_folder, self.context.kubespray_config.patches).patch()
 
+    def __patch_admin_file(self):
+        if os.path.exists(self.context.cluster_space.kubectl_file):
+            with open(self.context.cluster_space.kubectl_file, 'r') as file:
+                admin_content = yaml.full_load(file)
+            cluster_url = admin_content['clusters'][0]['cluster']['server']
+            first_master = next((inst for inst in self.resources if isinstance(inst, ServerNodeModel)), None)
+            if first_master and first_master.public_ip:
+                admin_content['clusters'][0]['cluster']['server'] = re.sub(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}',
+                                                                           first_master.public_ip,
+                                                                           cluster_url)
+                with open(self.context.cluster_space.kubectl_file, 'w') as target_file:
+                    yaml.dump(admin_content, target_file, width=float("inf"))
+
+    def __calculate_command_line_args(self):
+        user = utils.get_optional_arg(self.context.run_options, 'remote_user', 'root').strip()
+        return f'-u {user} -b'
+
     def create_cluster(self):
         # Initialize if not already done
         if not self.content_folder:
             self.initialize()
 
-        ##################### FILES TO PREPARE #######################
-        # !! Clone kubespray. It's root directory will be known as 'proyect_base'
-        # proyect_base/env/ssh_key => SSH PK to access remote servers
-        # proyect_base/inventory/hosts => Ansible inventory file as usual
-        # proyect_base/inventory/group_vars => All the files inside the original kubespray vars examples. Edit as needed.
-
-        # TODO Temporal
         r = ansible_runner.run(
             private_data_dir=self.content_folder,
             playbook='cluster.yml',
             project_dir=self.content_folder,
-            cmdline='-u root -b',
+            cmdline=self.__calculate_command_line_args(),
             inventory=self.current_inventory,
             ssh_key=self.context.ssh_key_manager.pk_data
         )
@@ -151,6 +162,7 @@ class KubesprayManager:
             admin_file = os.path.join(self.content_folder, 'inventory/artifacts/admin.conf')
             if os.path.exists(admin_file):
                 shutil.copyfile(admin_file, self.context.cluster_space.kubectl_file)
+                self.__patch_admin_file()
             # TODO  Check if admin.conf is not in the folder and kubespray is configured to copy it to localhost
 
         logger.info(f'Kubespray run finished. Result: {r}')

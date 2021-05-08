@@ -11,6 +11,11 @@ def try_parseint(s):
         return None
 
 
+def get_optional_arg(namespace, arg, default=None):
+    value = vars(namespace).get(arg, default)
+    return value if value else default
+
+
 def common_start(values):
     if len(values) != 0:
         start = values[0]

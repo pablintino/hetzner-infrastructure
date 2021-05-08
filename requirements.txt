@@ -19,7 +19,6 @@ jsonpath-ng==1.5.2
 lockfile==0.12.2
 MarkupSafe==1.1.1
 netaddr==0.7.19
-npath==0.0.1
 packaging==20.9
 pbr==5.4.4
 pexpect==4.8.0
@@ -29,6 +28,7 @@ psutil==5.8.0
 ptyprocess==0.7.0
 py==1.10.0
 pycparser==2.20
+pycryptodome==3.10.1
 pyparsing==2.4.7
 pytest==6.2.3
 python-daemon==2.3.0

@@ -13,7 +13,6 @@ class Options:
         parser.add_argument('--remote-user', dest='remote_user', type=str,
                               help='User to be used to connect to to remote')
 
-
     def __init__(self):
         self.parser = argparse.ArgumentParser(description='Kubernetes for Hetzner Cloud generator', prog='k8sgen')
         subparsers = self.parser.add_subparsers(help='sub-command help', dest='command')
