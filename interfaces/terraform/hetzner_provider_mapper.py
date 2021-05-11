@@ -1,6 +1,6 @@
 import utils
 from models.models import ServerNodeModel, ResourceChange, NodeInterfaceModel, NetworkModel, \
-    SubnetModel, GroupedChanges
+    SubnetModel, GroupedChanges, SSHKeyModel
 from jsonpath_ng.ext import parse
 
 from exceptions.exceptions import UnsupportedChangeException
@@ -36,6 +36,11 @@ def __map_network_ifs_servers(resource_list):
     for if_res in [resource for resource in resource_list if isinstance(resource, NodeInterfaceModel)]:
         if if_res.server_id and if_res.server_id in server_map:
             server_map[if_res.server_id].network_interfaces.append(if_res)
+
+
+def __parse_ssh_key(node, address):
+    return SSHKeyModel(name=node.get('name'), pub_rsa_key=node.get('public_key'), res_id=node.get('id'),
+                       res_addr=address)
 
 
 def parse_plan(terraform_plan):
@@ -83,3 +88,4 @@ mappers['hcloud_server'] = __parse_server_nodes
 mappers['hcloud_server_network'] = __parse_node_interface
 mappers['hcloud_network'] = __parse_network
 mappers['hcloud_network_subnet'] = __parse_subnet
+mappers['hcloud_ssh_key'] = __parse_ssh_key

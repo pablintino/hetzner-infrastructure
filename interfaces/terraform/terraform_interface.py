@@ -23,6 +23,21 @@ class Terraform:
         return {utils.remove_prefix(env, 'CLDGEN_TF_').lower(): val for env, val in os.environ.items() if
                 env.startswith('CLDGEN_TF')}
 
+    @staticmethod
+    def __prepare_input_vars(tf_vars, vars_files):
+        var_args = []
+        vars_dict = Terraform.__gather_env_vars()
+        if tf_vars:
+            vars_dict.update(tf_vars)
+        for var, val in vars_dict.items():
+            var_args.append(f'-var={var}={val}')
+
+        if vars_files:
+            for file in vars_files:
+                var_args.append(f'-var-file={file}')
+
+        return var_args
+
     def __call_tf_process(self, params, cwd=None, timeout=180):
         working_dir = os.getcwd() if not cwd else cwd
         arg_list = [self.tf_binary]
@@ -71,42 +86,43 @@ class Terraform:
         logger.debug(f'TF execution finished. Return code {ret_code}')
         return ret_code == 0 or (ret_code == 2 and '-detailed-exitcode' in arg_list)
 
-    def __run_parametrized_command(self, command, tf_file, vars_files=None, tf_vars=None, opts=None):
+    def __run_parametrized_command(self, command, tf_file, vars_files=None, tf_vars=None, opts=None, ignore_vars=False):
         args_list = [command]
-        vars_dict = Terraform.__gather_env_vars()
-        if tf_vars:
-            vars_dict.update(tf_vars)
-        for var, val in vars_dict.items():
-            args_list.append(f'-var={var}={val}')
-
-        if vars_files:
-            for file in vars_files:
-                args_list.append(f'-var-file={file}')
         if opts:
             args_list.extend(opts)
+
+        # When using a given plan vars and var file cannot be used
+        if not ignore_vars:
+            args_list.extend(self.__prepare_input_vars(tf_vars, vars_files))
+
         return self.__run_tf_process(args_list, os.path.dirname(tf_file) if os.path.isfile(tf_file) else tf_file,
                                      timeout=180)
 
-    def plan(self, tf_file, vars_files=None, vars_dict=None, json_out=False, state_file=None):
+    def plan(self, tf_file, vars_files=None, vars_dict=None, json_out=False, state_file=None, plan_file=None):
         opts = []
-        if json:
-            fd, filename = tempfile.mkstemp()
+        if json or plan_file:
+            filename = plan_file if plan_file else tempfile.mkstemp()[1]
             opts = [f'-out={filename}']
         if state_file:
             opts.append(f'-state={state_file}')
         ret_ok = self.__run_parametrized_command('plan', tf_file, vars_files, vars_dict, opts=opts)
         if ret_ok and json_out:
             show_res, json_capture = self.show(tf_file, filename)
-            fs.file_utils.safe_file_delete(filename)
+            if not plan_file:
+                # Remove only if file name wasn't provided
+                fs.file_utils.safe_file_delete(filename)
             return show_res, json_capture
         fs.file_utils.safe_file_delete(filename)
         return ret_ok, None
 
-    def apply(self, tf_file, vars_files=None, vars_dict=None, state_file=None):
+    def apply(self, tf_file, vars_files=None, vars_dict=None, state_file=None, plan_file=None):
         opts = ['-auto-approve']
         if state_file:
             opts.append(f'-state={state_file}')
-        return self.__run_parametrized_command('apply', tf_file, vars_files, vars_dict, opts=opts)
+        if plan_file:
+            opts.append(plan_file)
+
+            return self.__run_parametrized_command('apply', tf_file, vars_files, vars_dict, opts=opts, ignore_vars=True)
 
     def destroy(self, tf_file, vars_files=None, vars_dict=None, state_file=None):
         opts = ['-auto-approve']

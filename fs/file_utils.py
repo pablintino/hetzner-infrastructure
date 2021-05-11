@@ -3,10 +3,6 @@ import shutil
 import pathlib
 
 
-def get_generator_user_path():
-    return os.path.join(os.path.expanduser('~'), '.k8sgen')
-
-
 def move_content_to_parent(directory_path, delete_directory=True):
     path = pathlib.Path(directory_path)
     if path == path.parent and delete_directory:

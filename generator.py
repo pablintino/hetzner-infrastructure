@@ -4,7 +4,7 @@ import logging
 import options
 
 from commands.terraform_based_commands import CreateClusterCommand, DestroyClusterCommand
-from exceptions.exceptions import ConfigurationException, SSHKeysException
+from exceptions.exceptions import ConfigurationException, SSHKeysException, ErrorCodeBaseException
 from run_context import RunContext
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s| %(message)s')
@@ -43,9 +43,9 @@ def exec_command(run_options):
             logger.error('Unrecognised command')
             return os.EX_USAGE
 
-    except (ConfigurationException, SSHKeysException) as ex:
+    except ErrorCodeBaseException as ex:
         logger.error(ex)
-        return os.EX_USAGE
+        return ex.err_code
     finally:
         run_context.destroy()
 

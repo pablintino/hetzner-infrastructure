@@ -7,7 +7,7 @@ import logging
 import dpath.util
 import ansible_runner
 
-from exceptions.exceptions import ConfigurationException
+from exceptions.exceptions import ConfigurationException, KubesprayCLusterCreationException
 from fs import file_utils
 from models.models import ServerNodeModel
 
@@ -161,6 +161,9 @@ class KubesprayManager:
             if os.path.exists(admin_file):
                 shutil.copyfile(admin_file, self.context.cluster_space.kubectl_file)
                 self.__patch_admin_file()
-            # TODO  Check if admin.conf is not in the folder and kubespray is configured to copy it to localhost
 
-        logger.info(f'Kubespray run finished. Result: {r}')
+                os.chmod(self.context.cluster_space.kubectl_file, 0o644)
+            # TODO  Check if admin.conf is not in the folder and kubespray is configured to copy it to localhost
+        else:
+            raise KubesprayCLusterCreationException('An error occurred while executing creation cluster.yml playbook')
+        logger.info(f'Kubespray run finished successfully. Time spent')

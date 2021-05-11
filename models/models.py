@@ -73,3 +73,10 @@ class SubnetModel(ResourceModel):
         super().__init__(res_id, res_addr)
         self.network_id = network_id
         self.ip_range = ip_range
+
+
+class SSHKeyModel(ResourceModel):
+    def __init__(self, name, pub_rsa_key, res_id=None, res_addr=None):
+        super().__init__(res_id, res_addr)
+        self.name = name
+        self.pub_rsa_key = pub_rsa_key

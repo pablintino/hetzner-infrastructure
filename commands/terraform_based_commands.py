@@ -3,9 +3,11 @@ import json
 import interfaces.terraform.hetzner_provider_mapper
 
 from abc import ABC
+
+import utils
 from commands.command import Command
 from commands.validators.command_validators import KubesprayPatchesValidator
-from exceptions.exceptions import UnexpectedTerraformFailureException
+from exceptions.exceptions import UnexpectedTerraformFailureException, CommandConfirmationException
 from interfaces.ansible.kubespray_manager import KubesprayManager
 from interfaces.terraform import hetzner_provider_mapper
 from interfaces.terraform.terraform_interface import Terraform
@@ -53,15 +55,15 @@ class CreateClusterCommand(TerraformBaseCommand):
 
             tf_vars = {'ssh_public_key': self.context.ssh_key_manager.get_public_rsa_key_opnessh()}
 
+            plan_file = self.context.temporal_fs.get_temporal_file()
             res, output = self.tf.plan(self.terraform_content, [infra_settings_file], tf_vars, True,
-                                       state_file=self.context.cluster_space.tf_state_file)
+                                       state_file=self.context.cluster_space.tf_state_file, plan_file=plan_file)
             if res:
                 # TODO Make some validations
                 plan_changes = hetzner_provider_mapper.parse_plan(output)
-                # TODO Call apply with the planned state instead of recalculate all
                 if plan_changes.create or plan_changes.destroy or plan_changes.update:
                     res = self.tf.apply(self.terraform_content, [infra_settings_file], tf_vars,
-                                        state_file=self.context.cluster_space.tf_state_file)
+                                        state_file=self.context.cluster_space.tf_state_file, plan_file=plan_file)
                 if res:
                     self.logger.info('Infrastructure successfully created')
                     spray = KubesprayManager(self.context, self.get_state_resources())
@@ -83,6 +85,9 @@ class DestroyClusterCommand(TerraformBaseCommand):
     def run(self):
 
         try:
+            if not utils.get_optional_arg(self.context.run_options, 'confirm'):
+                raise CommandConfirmationException('Destroy command needs destruction confirmation flag')
+
             self.prepare_arena()
             infra_settings_file = self.get_dumped_infra_settings()
 

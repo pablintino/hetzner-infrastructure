@@ -16,7 +16,7 @@ class PackageManager:
 
     __logger = logging.getLogger(__name__)
 
-    def __init__(self, package_name, package_metadata, temporal_fs_manager):
+    def __init__(self, package_name, package_metadata, temporal_fs_manager, generator_dir):
 
         if not package_name:
             raise ValueError('package_name cannot be null or empty')
@@ -25,8 +25,7 @@ class PackageManager:
 
         self.temporal_fs_manager = temporal_fs_manager
         self.package_name = package_name
-        k8s_folder = file_utils.get_generator_user_path()
-        self.content_folder = os.path.join(k8s_folder, 'content')
+        self.content_folder = os.path.join(generator_dir, 'content')
         self.package_content_path = None
         self.reusable_content = None
 
@@ -37,7 +36,7 @@ class PackageManager:
         if not self.package_version:
             raise ConfigurationException(f'{self.package_name} version is empty')
 
-        if not os.path.exists(k8s_folder):
+        if not os.path.exists(generator_dir):
             os.mkdir(self.files_folder)
         if not os.path.exists(self.content_folder):
             os.mkdir(self.content_folder)
