@@ -1,10 +1,9 @@
 import os
 import json
+import utils
 import interfaces.terraform.hetzner_provider_mapper
 
 from abc import ABC
-
-import utils
 from commands.command import Command
 from commands.validators.command_validators import KubesprayPatchesValidator
 from exceptions.exceptions import UnexpectedTerraformFailureException, CommandConfirmationException

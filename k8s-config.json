@@ -5,8 +5,12 @@
     "remote-user": "root",
     "patches":[
       {
-        "path": "k8s-cluster/k8s-cluster.yml|kubeconfig_localhost",
+        "path": "k8s_cluster/k8s-cluster.yml|kubeconfig_localhost",
         "value": true
+      },
+      {
+        "path": "all/all.yml|cloud_provider",
+        "value": "external"
       }
     ]
   },
@@ -18,7 +22,7 @@
           "server_type": "cx21",
           "location": "nbg1",
           "node_type": [
-            "kube-master",
+            "kube_control_plane",
             "etcd"
           ]
         },
@@ -26,7 +30,7 @@
           "server_type": "cx21",
           "location": "nbg1",
           "node_type": [
-            "kube-master",
+            "kube_control_plane",
             "etcd"
           ]
         },
@@ -34,7 +38,7 @@
           "server_type": "cx21",
           "location": "nbg1",
           "node_type": [
-            "kube-master",
+            "kube_control_plane",
             "etcd"
           ]
         },
@@ -42,7 +46,7 @@
           "server_type": "cx21",
           "location": "nbg1",
           "node_type": [
-            "kube-node"
+            "kube_node"
           ]
         }
       }
@@ -50,8 +54,8 @@
   },
   "packages": {
     "kubespray": {
-      "source-url": "https://github.com/kubernetes-sigs/kubespray/archive/refs/tags/v2.15.1.tar.gz",
-      "version": "v2.15.1"
+      "source-url": "https://github.com/kubernetes-sigs/kubespray/archive/refs/tags/v2.16.0.tar.gz",
+      "version": "v2.16.1"
     },
     "terraform": {
       "source-url": "git@github.com:pablintino/terraform-infraestructure.git",

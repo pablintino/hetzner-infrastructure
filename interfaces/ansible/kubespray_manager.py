@@ -77,17 +77,10 @@ class KubesprayManager:
             raise TypeError('resources cannot be null')
 
         # TODO Be aware of naming changes in kubespray
-        inventory = {'all': {'hosts': {}, 'children': {}}}
-        inventory['all']['children']['kube-master'] = {'hosts': {}}
-        inventory['all']['children']['kube-node'] = {'hosts': {}}
-        inventory['all']['children']['calico-rr'] = {'hosts': {}}
-        inventory['all']['children']['etcd'] = {'hosts': {}}
-        inventory['all']['children']['k8s-cluster'] = {'children': {
-            'kube-master': {},
-            'kube-node': {},
-            'calico-rr': {},
-        }}
+        inventory = {'all': {'hosts': {}, 'children': {'k8s_cluster': {'children': {}}}, }}
+        inventory_base_node = inventory['all']
 
+        all_roles_list = set()
         for server_node in [inst for inst in resources if isinstance(inst, ServerNodeModel)]:
 
             internal_ip = server_node.network_interfaces[0].ip if server_node.network_interfaces else None
@@ -96,17 +89,20 @@ class KubesprayManager:
             if internal_ip:
                 host_node['ip'] = internal_ip
 
-            if server_node.roles and 'etcd' in server_node.roles:
-                host_node['etcd_member_name'] = 'etcd-' + server_node.name
-                inventory['all']['children']['etcd']['hosts'][server_node.name] = {}
+            for role_name in server_node.roles:
+                # etcd nodes have an extra variable indicating their etcd name
+                if role_name == 'etcd':
+                    host_node['etcd_member_name'] = 'etcd-' + server_node.name
 
-            if server_node.roles and 'kube-master' in server_node.roles:
-                inventory['all']['children']['kube-master']['hosts'][server_node.name] = {}
+                if role_name not in inventory_base_node['children']:
+                    inventory_base_node['children'][role_name] = {'hosts': {}}
+                inventory_base_node['children'][role_name]['hosts'][server_node.name] = {}
 
-            if server_node.roles and 'kube-node' in server_node.roles:
-                inventory['all']['children']['kube-node']['hosts'][server_node.name] = {}
+                all_roles_list.add(role_name)
+            inventory_base_node['hosts'][server_node.name] = host_node
 
-            inventory['all']['hosts'][server_node.name] = host_node
+        for role_name in all_roles_list:
+            inventory_base_node['children']['k8s_cluster']['children'][role_name] = {}
 
         return inventory
 

@@ -31,3 +31,7 @@ override.tf.json
 terraform.rc
 
 *.lock.hcl
+.idea/*
+venv/*
+**/__pycache__/*
+__pycache__/*
